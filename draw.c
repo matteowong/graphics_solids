@@ -21,6 +21,21 @@
   ====================*/
 void scanline_convert( struct matrix *points, int i, screen s, zbuffer zb ) {
 
+  //set color
+  color c;
+  c.red=0;
+  c.green=255;
+  c.blue=0;
+
+  //points will be at m->[0-2][i, i+1, i+2]
+  int top, middle, bottom;
+  top=points->m[1][i];
+  if (top<points->m[1][i+1]) {
+    middle=top;
+    top=points->m[1][i+1];
+  }
+
+  
 }
 
 /*======== void add_polygon() ==========
