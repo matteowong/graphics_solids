@@ -21,21 +21,78 @@
   ====================*/
 void scanline_convert( struct matrix *points, int i, screen s, zbuffer zb ) {
 
-  //set color
+  //set color, increment and mod 255 each time
   color c;
-  c.red=0;
-  c.green=255;
-  c.blue=0;
+  c.red=(1+i*19)%255;
+  c.green=(2+i*37)%255;//+=37
+  c.blue=(3+i*87)%255;//+=83
 
-  //points will be at m->[0-2][i, i+1, i+2]
+  //points will be at m->[0-2][i, i+1, i+2], set T/M/B based on y-values
   int top, middle, bottom;
-  top=points->m[1][i];
-  if (top<points->m[1][i+1]) {
-    middle=top;
-    top=points->m[1][i+1];
-  }
+  if (points->m[1][i]>=points->m[1][i+1] &&
+      points->m[1][i]>=points->m[1][i+2]) {
+    top=i;
+    if (points->m[1][i+1]<points->m[1][i+2]) {
+      bottom=i+1;
+      middle=i+2;
+    }
+    else {
+      bottom=i+2;
+      middle=i+1;
+    }
 
+  } else if (points->m[1][i+1]>=points->m[1][i+2] &&
+      points->m[1][i+1]>=points->m[1][i]) {
+    top=i+1;
+    if (points->m[1][i]<points->m[1][i+2]) {
+      bottom=i;
+      middle=i+2;
+    }
+    else {
+      bottom=i+2;
+      middle=i;
+    }
+
+  } else {
+    top=i+2;
+    if (points->m[1][i]<points->m[1][i+1]) {
+      bottom=i;
+      middle=i+1;
+    }
+    else {
+      bottom=i+1;
+      middle=i;
+    }
+  }
+  //printf("top: %d, middle: %d, bottom: %d\n",top,middle,bottom);
+  //printf("top: %lf, middle: %lf, bottom: %lf\n",points->m[1][top],points->m[1][middle],points->m[1][bottom]);
   
+  double y,x0,x1,delta_x0,delta_x1;
+  
+  y=points->m[1][bottom];
+  delta_x0=(points->m[0][top]-points->m[0][bottom])/(points->m[1][top]-points->m[1][bottom]);
+  delta_x1=(points->m[0][middle]-points->m[0][bottom])/(points->m[1][middle]-points->m[1][bottom]);
+  x0=points->m[0][bottom];
+  x1=x0;
+  while (y<points->m[1][top]) {
+
+    if (y>=points->m[1][middle]) {
+      delta_x1=(points->m[0][top]-points->m[0][middle])/(points->m[1][top]-points->m[1][middle]);
+      //x1=points->m[0][middle];
+    }
+
+    draw_line(x0,y,0,x1,y,0,s,zb,c);
+    
+    //increments
+    y++;
+    x0+=delta_x0;
+    x1+=delta_x1;
+    //c.red=(c.red+19)%255;
+    //c.green=(c.green+37)%255;
+    //c.blue=(c.blue+83)%255;
+  }
+  
+
 }
 
 /*======== void add_polygon() ==========
@@ -109,6 +166,7 @@ void draw_polygons(struct matrix *polygons, screen s, zbuffer zb, color c ) {
                  polygons->m[1][point+2],
                  polygons->m[2][point+2],
                  s, zb, c);
+      scanline_convert(polygons,point,s,zb);
     }
   }
 }
