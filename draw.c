@@ -67,29 +67,62 @@ void scanline_convert( struct matrix *points, int i, screen s, zbuffer zb ) {
   //printf("top: %d, middle: %d, bottom: %d\n",top,middle,bottom);
   //printf("top: %lf, middle: %lf, bottom: %lf\n",points->m[1][top],points->m[1][middle],points->m[1][bottom]);
   
-  double y,x0,x1,delta_x0,delta_x1;
-  
-  y=points->m[1][bottom];
-  delta_x0=(points->m[0][top]-points->m[0][bottom])/(points->m[1][top]-points->m[1][bottom]);
-  delta_x1=(points->m[0][middle]-points->m[0][bottom])/(points->m[1][middle]-points->m[1][bottom]);
+  double x0,x1,delta_x0,delta_x1;
+  double yb,ym,yt;
+  int y;
+  //check=points->m[1][middle];
+
+  //y stuff
+  yb=points->m[1][bottom];
+  ym=points->m[1][middle];
+  yt=points->m[1][top];
+  y=yb;
+  delta_x0=(points->m[0][top]-points->m[0][bottom])/(yt-yb);//(points->m[1][top]-points->m[1][bottom]);
+  delta_x1=(points->m[0][middle]-points->m[0][bottom])/(ym-yb);//(points->m[1][middle]-points->m[1][bottom]);
   x0=points->m[0][bottom];
   x1=x0;
-  while (y<points->m[1][top]) {
 
-    if (y>=points->m[1][middle]) {
-      delta_x1=(points->m[0][top]-points->m[0][middle])/(points->m[1][top]-points->m[1][middle]);
-      //x1=points->m[0][middle];
-    }
+  //z stuff
+  double z0,z1,delta_z0,delta_z1;
+  delta_z0=(points->m[2][top]-points->m[2][bottom])/(yt-yb);//(points->m[1][top]-points->m[1][bottom]);
+  delta_z1=(points->m[2][middle]-points->m[2][bottom])/(ym-yb);//(points->m[1][middle]-points->m[1][bottom]);
+  z0=points->m[2][bottom];
+  z1=z0;
+  
+  while (y<ym) {
 
-    draw_line(x0,y,0,x1,y,0,s,zb,c);
+    draw_line(x0,y,z0,x1,y,z1,s,zb,c);//need to replace 0 with z values
     
     //increments
     y++;
     x0+=delta_x0;
     x1+=delta_x1;
+    z0+=delta_z0;
+    z1+=delta_z1;
     //c.red=(c.red+19)%255;
     //c.green=(c.green+37)%255;
     //c.blue=(c.blue+83)%255;
+  }
+
+
+  delta_x1=(points->m[0][top]-points->m[0][middle])/(yt-ym);//(points->m[1][top]-points->m[1][middle]);
+  x1=points->m[0][middle];
+
+  delta_z1=(points->m[2][top]-points->m[2][middle])/(yt-ym);//(points->m[1][top]-points->m[1][middle]);
+  z1=points->m[2][middle];
+
+  while (y<yt) {
+
+    draw_line(x0,y,z0,x1,y,z1,s,zb,c);//need to replace 0 with z values
+    
+    //increments
+    y++;
+    x0+=delta_x0;
+    x1+=delta_x1;
+    z0+=delta_z0;
+    z1+=delta_z1;
+      
+
   }
   
 
@@ -145,6 +178,7 @@ void draw_polygons(struct matrix *polygons, screen s, zbuffer zb, color c ) {
 
     if ( normal[2] > 0 ) {
 
+      /*
       draw_line( polygons->m[0][point],
                  polygons->m[1][point],
                  polygons->m[2][point],
@@ -165,7 +199,7 @@ void draw_polygons(struct matrix *polygons, screen s, zbuffer zb, color c ) {
                  polygons->m[0][point+2],
                  polygons->m[1][point+2],
                  polygons->m[2][point+2],
-                 s, zb, c);
+                 s, zb, c);*/
       scanline_convert(polygons,point,s,zb);
     }
   }
@@ -588,6 +622,7 @@ void draw_line(int x0, int y0, double z0,
 
   int x, y, d, A, B;
   int dy_east, dy_northeast, dx_east, dx_northeast, d_east, d_northeast;
+  double z,dz;//find either in terms of x or y, z1-z0/deltaX or deltaY
   int loop_start, loop_end;
 
   //swap points if going right -> left
@@ -604,6 +639,7 @@ void draw_line(int x0, int y0, double z0,
 
   x = x0;
   y = y0;
+  z=z0;
   A = 2 * (y1 - y0);
   B = -2 * (x1 - x0);
   int wide = 0;
@@ -616,6 +652,7 @@ void draw_line(int x0, int y0, double z0,
     dx_east = dx_northeast = 1;
     dy_east = 0;
     d_east = A;
+    dz=(z1-z0)/(x1-x0);
     if ( A > 0 ) { //octant 1
       d = A + B/2;
       dy_northeast = 1;
@@ -631,6 +668,7 @@ void draw_line(int x0, int y0, double z0,
     tall = 1;
     dx_east = 0;
     dx_northeast = 1;
+    dz=(z1-z0)/(y1-y0);
     if ( A > 0 ) {     //octant 2
       d = A/2 + B;
       dy_east = dy_northeast = 1;
@@ -651,7 +689,7 @@ void draw_line(int x0, int y0, double z0,
 
   while ( loop_start < loop_end ) {
 
-    plot( s, zb, c, x, y, 0);
+    plot( s, zb, c, x, y, z);//need a z value here instead of 0
     if ( (wide && ((A > 0 && d > 0) ||
                    (A < 0 && d < 0)))
          ||
@@ -666,6 +704,7 @@ void draw_line(int x0, int y0, double z0,
       y+= dy_east;
       d+= d_east;
     }
+    z+=dz;
     loop_start++;
   } //end drawing loop
   plot( s, zb, c, x1, y1, 0 );
