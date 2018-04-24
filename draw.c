@@ -28,42 +28,27 @@ void scanline_convert( struct matrix *points, int i, screen s, zbuffer zb ) {
   c.blue=(3+i*87)%255;//+=83
 
   //points will be at m->[0-2][i, i+1, i+2], set T/M/B based on y-values
-  int top, middle, bottom;
-  if (points->m[1][i]>=points->m[1][i+1] &&
-      points->m[1][i]>=points->m[1][i+2]) {
-    top=i;
-    if (points->m[1][i+1]<points->m[1][i+2]) {
-      bottom=i+1;
-      middle=i+2;
-    }
-    else {
-      bottom=i+2;
-      middle=i+1;
-    }
+  int top, middle, bottom, temp;
+  top=i;
+  middle=i+1;
+  bottom=i+2;
 
-  } else if (points->m[1][i+1]>=points->m[1][i+2] &&
-      points->m[1][i+1]>=points->m[1][i]) {
-    top=i+1;
-    if (points->m[1][i]<points->m[1][i+2]) {
-      bottom=i;
-      middle=i+2;
-    }
-    else {
-      bottom=i+2;
-      middle=i;
-    }
-
-  } else {
-    top=i+2;
-    if (points->m[1][i]<points->m[1][i+1]) {
-      bottom=i;
-      middle=i+1;
-    }
-    else {
-      bottom=i+1;
-      middle=i;
-    }
+  if (points->m[1][bottom]>points->m[1][middle]) {
+    temp=bottom;
+    bottom=middle;
+    middle=temp;
   }
+  if (points->m[1][bottom]>points->m[1][top]) {
+    temp=top;
+    top=bottom;
+    bottom=temp;
+  }
+  if (points->m[1][middle]>points->m[1][top]) {
+    temp=top;
+    top=middle;
+    middle=temp;
+  }
+
   //printf("top: %d, middle: %d, bottom: %d\n",top,middle,bottom);
   //printf("top: %lf, middle: %lf, bottom: %lf\n",points->m[1][top],points->m[1][middle],points->m[1][bottom]);
   
@@ -626,15 +611,17 @@ void draw_line(int x0, int y0, double z0,
   int loop_start, loop_end;
 
   //swap points if going right -> left
-  int xt, yt;
+  int xt, yt,zt;
   if (x0 > x1) {
     xt = x0;
     yt = y0;
+    zt=z0;
     x0 = x1;
     y0 = y1;
     z0 = z1;
     x1 = xt;
     y1 = yt;
+    z1=zt;
   }
 
   x = x0;
@@ -707,5 +694,5 @@ void draw_line(int x0, int y0, double z0,
     z+=dz;
     loop_start++;
   } //end drawing loop
-  plot( s, zb, c, x1, y1, 0 );
+  plot( s, zb, c, x1, y1, z1 );
 } //end draw_line
