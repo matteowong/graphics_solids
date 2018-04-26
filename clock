@@ -26,9 +26,11 @@ box
 -25 135 45 50 25 40
 sphere
 -20 -25 25 20
-#push
-#move
-#0 135 0
-#torus
-#0 0 20 5 20
+push
+move
+0 135 0
+torus
+0 0 20 5 20
 display
+save
+clock.png
